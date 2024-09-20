@@ -19,16 +19,11 @@ v_file_date = dbutils.widgets.get("p_file_date")
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/configuration"
+# MAGIC %run "../../includes/configuration"
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/common_functions"
-
-# COMMAND ----------
-
-raw_folder_path
-processed_folder_path
+# MAGIC %run "../../includes/common_functions"
 
 # COMMAND ----------
 
@@ -120,22 +115,14 @@ display(circuits_final_df)
 
 # COMMAND ----------
 
-##Save data as parquet - mode overwrite to overwrite existing data if the case (other modes available in API)
-# circuits_final_df.write.mode("overwrite").format("parquet").saveAsTable("f1_processed.circuits")
-# circuits_final_df.write.mode("overwrite").format("parquet").saveAsTable("f1_processed.circuits")
-# circuits_final_df.write.parquet(f"{processed_folder_path}/circuits", mode = "overwrite")
-## check how file was saved in location
-
-# COMMAND ----------
-
-circuits_final_df.write.mode("overwrite").format("delta").saveAsTable("hive_metastore.f1_processed.circuits")
-circuits_final_df.write.mode("overwrite").format("delta").saveAsTable("hive_metastore.f1_processed.circuits")
+# Here we create the tables using spark syntax. We are here creating MANAGED tables because not specifying the path 
+circuits_final_df.write.mode("overwrite").format("delta").saveAsTable("databricks_ws_2.f1_silver.circuits")
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC SELECT *
-# MAGIC FROM hive_metastore.f1_processed.circuits
+# MAGIC FROM databricks_ws_2.f1_silver.circuits
 
 # COMMAND ----------
 
