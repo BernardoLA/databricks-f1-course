@@ -15,11 +15,11 @@ v_file_date = dbutils.widgets.get("p_file_date")
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/configuration"
+# MAGIC %run "./includes/configuration"
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/common_functions"
+# MAGIC %run "./includes/common_functions"
 
 # COMMAND ----------
 
@@ -62,14 +62,22 @@ display(final_df)
 
 # COMMAND ----------
 
+
+# results will be an incremental load. therefore we update the records that could come in new batches and add unexisting ones in the 
+# by includin the race_id in the merge condition and help spark to find the keys and avoid looping over all partition for each result id.
 merge_condition = "tgt.qualify_id = upd.qualify_id AND tgt.race_id = upd.race_id"
-merge_delta_data(final_df, 'f1_processed', 'qualifying', processed_folder_path, merge_condition, 'race_id')
+merge_delta_data(input_df = final_df, \
+                 db_name = "f1_silver", \
+                 table_name = "qualifying", \
+                 merge_condition = merge_condition, \
+                 partition_column = "race_id", \
+                 catalog_name="databricks_ws_2")
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC SELECT qualify_id, race_id, driver_id, position, ingestion_date, file_date -- Select a subset of useful columns
-# MAGIC FROM hive_metastore.f1_processed.qualifying
+# MAGIC FROM databricks_ws_2.f1_silver.qualifying
 # MAGIC WHERE race_id = 1 -- Filter on partition column to improve performance
 # MAGIC   AND ingestion_date >= date_sub(current_date(), 30) -- Filter on date column to limit data to recent entries
-# MAGIC LIMIT 100 -- Limit the number of rows returned
+# MAGIC LIMIT 30 -- Limit the number of rows returned

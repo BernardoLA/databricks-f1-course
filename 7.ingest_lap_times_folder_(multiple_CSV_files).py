@@ -15,11 +15,11 @@ v_file_date = dbutils.widgets.get("p_file_date")
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/configuration"
+# MAGIC %run "./includes/configuration"
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/common_functions"
+# MAGIC %run "./includes/common_functions"
 
 # COMMAND ----------
 
@@ -53,10 +53,17 @@ final_df = lap_times_with_ingestion_date_df \
 
 # COMMAND ----------
 
+# results will be an incremental load. therefore we update the records that could come in new batches and add unexisting ones in the 
+# by includin the race_id in the merge condition and help spark to find the keys and avoid looping over all partition for each result id.
 merge_condition = "tgt.race_id = upd.race_id AND tgt.driver_id = upd.driver_id AND tgt.lap = upd.lap"
-merge_delta_data(final_df,"f1_processed","lap_times", processed_folder_path, merge_condition, "race_id")
+merge_delta_data(input_df = final_df, \
+                 db_name = "f1_silver", \
+                 table_name = "lap_times", \
+                 merge_condition = merge_condition, \
+                 partition_column = "race_id", \
+                 catalog_name="databricks_ws_2")
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT * FROM hive_metastore.f1_processed.lap_times
+# MAGIC SELECT * FROM databricks_ws_2.f1_silver.lap_times LIMIT 10
