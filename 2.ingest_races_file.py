@@ -63,10 +63,6 @@ races_selected_renamed_df = races_selected_df \
 
 # COMMAND ----------
 
-display(races_selected_renamed_df)
-
-# COMMAND ----------
-
 # making this table external by adding option with the path for learning purposes
 # ipc: tried to use the mnt path but it did not work anymore. unity catalog does not accept it(?maybe addressed in the course)
 races_selected_renamed_df.write.mode("overwrite").partitionBy("race_year").format("delta").option("path","abfss://processed@formulaonedb.dfs.core.windows.net/races_ext").saveAsTable("databricks_ws_2.f1_silver.races_ext")
