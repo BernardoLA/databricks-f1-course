@@ -1,5 +1,10 @@
 -- Databricks notebook source
--- he creates the databases to later creates tables so daa analysts can interact with it using SQL.
+-- The purpose of recreating the schemas and tables ist that, he argues, data analysts can interact with it using SQL.
+-- whereas pyspark is more comfortable for data engineers.
+-- Unity Catalog is composed of two core elements: Storage Credential and External Location.
+-- Here we create the External Location for all schemas in the Catalog which takes the workspace name:
+-- for that we need a storage credential (acess-connector) and the container paths to the storage account linked to this project.
+
 
 -- COMMAND ----------
 
@@ -28,9 +33,9 @@ COMMENT 'the external location is an object that combines the storage credential
 -- COMMAND ----------
 
 -- have to specify the location
-DROP SCHEMA IF EXISTS databricks_ws_2.f1_processed;
-DROP SCHEMA IF EXISTS databricks_ws_2.f1_bronze;
-DROP SCHEMA IF EXISTS databricks_ws_2.f1_gold;
+-- DROP SCHEMA IF EXISTS databricks_ws_2.f1_processed;
+-- DROP SCHEMA IF EXISTS databricks_ws_2.f1_bronze;
+-- DROP SCHEMA IF EXISTS databricks_ws_2.f1_gold;
 
 -- COMMAND ----------
 
