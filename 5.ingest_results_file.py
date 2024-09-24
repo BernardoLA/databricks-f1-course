@@ -15,11 +15,11 @@ v_file_date = dbutils.widgets.get("p_file_date")
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/configuration"
+# MAGIC %run "./includes/configuration"
 
 # COMMAND ----------
 
-# MAGIC %run "../includes/common_functions"
+# MAGIC %run "./includes/common_functions"
 
 # COMMAND ----------
 
@@ -52,6 +52,7 @@ results_df = spark.read \
 
 # COMMAND ----------
 
+# add two columns with data source and file date and rename others
 results_with_columns_df = results_df.withColumnRenamed("resultId", "result_id") \
                                     .withColumnRenamed("raceId", "race_id") \
                                     .withColumnRenamed("driverId", "driver_id") \
@@ -66,32 +67,8 @@ results_with_columns_df = results_df.withColumnRenamed("resultId", "result_id") 
 
 # COMMAND ----------
 
+# add ingestion date column
 results_with_ingestion_date_df = add_ingestion_date(results_with_columns_df)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ##### Step 4 - Write to output to processed container in parquet format
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC Method 1
-
-# COMMAND ----------
-
-### ------------- Method 1 ------------ ###
-# # be careful working with collect, puts all data in driver's node memory, so very resource-consuming
-# # in this case is okay because we are collecting a small number of records: 
-# for race_id_list in results_with_ingestion_date_df.select("race_id").distinct().collect():
-#     if spark.catalog.tableExists("hive_metastore.f1_processed.results"):
-#         print(race_id_list.race_id)
-#         spark.sql(f"ALTER TABLE hive_metastore.f1_processed.results DROP IF EXISTS PARTITION (race_id = {race_id_list.race_id})")
-
-# COMMAND ----------
-
-### ------------- Method 1 ------------ ###
-# results_with_ingestion_date_df.write.mode("append").partitionBy("race_id").format("parquet").saveAsTable("hive_metastore.f1_processed.results")
 
 # COMMAND ----------
 
@@ -107,27 +84,28 @@ results_final_df = results_with_ingestion_date_df.select(
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC De-dupe(remove duplicates) dataframe
-# MAGIC
-
-# COMMAND ----------
-
+# there was duplicate records in the results table, we need to deduplicate the data
 results_deduped_df = results_final_df.dropDuplicates(["race_id","driver_id"])
 
 # COMMAND ----------
 
+# results will be an incremental load. therefore we update the records that could come in new batches and add unexisting ones in the 
+# by includin the race_id in the merge condition and help spark to find the keys and avoid looping over all partition for each result id.
 merge_condition = "tgt.result_id = upd.result_id AND tgt.race_id = upd.race_id"
-merge_delta_data(results_deduped_df,"f1_processed","results",processed_folder_path, merge_condition,"race_id")
+merge_delta_data(input_df = results_deduped_df, \
+                 db_name = "f1_silver", \
+                 table_name = "results", \
+                 merge_condition = merge_condition, \
+                 partition_column = "race_id", \
+                 catalog_name="databricks_ws_2")
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC SELECT race_id, COUNT(1)
-# MAGIC FROM hive_metastore.f1_processed.results
+# MAGIC FROM databricks_ws_2.f1_silver.results
 # MAGIC GROUP BY race_id
-# MAGIC ORDER BY race_id DESC
-# MAGIC LIMIT 10;
+# MAGIC ORDER BY race_id DESC;
 
 # COMMAND ----------
 
@@ -135,6 +113,10 @@ merge_delta_data(results_deduped_df,"f1_processed","results",processed_folder_pa
 # MAGIC -- there are some duplicates in the data that we need to take care of 
 # MAGIC -- we'll just use dropDuplicates function and let Spark decide which record to pick
 # MAGIC SELECT race_id, driver_id, COUNT(1)
-# MAGIC   FROM hive_metastore.f1_processed.results
+# MAGIC   FROM databricks_ws_2.f1_silver.results
 # MAGIC   GROUP BY race_id, driver_id
 # MAGIC   HAVING COUNT(1) > 1;
+
+# COMMAND ----------
+
+
