@@ -62,8 +62,8 @@ results_with_columns_df = results_df.withColumnRenamed("resultId", "result_id") 
                                     .withColumnRenamed("fastestLap", "fastest_lap") \
                                     .withColumnRenamed("fastestLapTime", "fastest_lap_time") \
                                     .withColumnRenamed("fastestLapSpeed", "fastest_lap_speed") \
-                                    .withColumn("data_source", lit(v_data_source)) \
-                                    .withColumn("file_date", lit(v_file_date))
+                                    .withColumn("data_source", lit(v_data_source)) # add the data source\  
+                                    .withColumn("file_date", lit(v_file_date)) # add the date of the batch
 
 # COMMAND ----------
 
@@ -109,14 +109,10 @@ merge_delta_data(input_df = results_deduped_df, \
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC -- there are some duplicates in the data that we need to take care of 
-# MAGIC -- we'll just use dropDuplicates function and let Spark decide which record to pick
-# MAGIC SELECT race_id, driver_id, COUNT(1)
-# MAGIC   FROM databricks_ws_2.f1_silver.results
-# MAGIC   GROUP BY race_id, driver_id
-# MAGIC   HAVING COUNT(1) > 1;
-
-# COMMAND ----------
-
-
+# %sql
+# -- there are some duplicates in the data that we need to take care of 
+# -- we'll just use dropDuplicates function and let Spark decide which record to pick
+# SELECT race_id, driver_id, COUNT(1)
+#   FROM databricks_ws_2.f1_silver.results
+#   GROUP BY race_id, driver_id
+#   HAVING COUNT(1) > 1;
