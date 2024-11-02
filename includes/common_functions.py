@@ -56,6 +56,10 @@ def merge_delta_data(input_df, db_name, table_name, merge_condition, partition_c
             .merge(
                 input_df.alias("upd"), merge_condition) \
             .whenMatchedUpdateAll() \
+            # in real project would set create_date and update_date columns:
+            # 1) whenMatch evaluates TRUE updated_date = current_timestamp
+            # 2) whenNotMatch evaluates TRUE created_date = current_timestamp
+            # This logic is implemented is last transformation notebook with SQL API
             .whenNotMatchedInsertAll() \
             .execute()
     else:
